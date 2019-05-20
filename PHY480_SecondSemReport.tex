@@ -1,0 +1,322 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}
+\geometry{a4paper, portrait, margin=2.54cm}
+\usepackage{graphicx}
+\graphicspath{ {/Users/vatsalmandalia/Downloads/} }
+
+\begin{document}
+\date{}
+
+\title{\bf N-Body simulations of star-star encounters}
+
+\maketitle
+
+\begin{abstract}
+{\normalsize{ 
+N-Body simulations are carried out on the Solar System by developing a complex fourth order predictor-corrector method. The main code is constructed in a block manner with different tasks like the Bootstrapping, Predictor-Corrector, Adaptive timestep and Downshifting. The second order code created in the first semester is included in bootstrapping. In comparison to the second order code, the fourth order method allows small timesteps but not resulting in long computational time. With a higher accuracy obtained, the simulations are carried out for different runtimes of 1000 yr, 100,000 yr and 1 Myr. The stability of the system is checked using the fractional energy and the orbital distance calculations. Simulations show the system being unstable due to the rise in the fractional energy. The source for the errors in the code is checked via a brute force method. These code checks reveal problems in the adaptive timestep block. The aim for producing Myr simulations was to observe the periodic glacial cycles occurring from the variations of eccentricity of Earth's orbit. 
+ }}
+
+\end{abstract}
+
+\bigskip
+
+\section{\textbf{Introduction}}
+{\normalsize{Stars like our Sun are born in groups/clusters with other stars. All of them having a similar age, only a difference in their masses. Gravitational interactions in the clusters cause changes in the dynamical properties of the members. The evolution of this group of stars can be produced in N-Body simulations. In this project, N-Body simulations are carried out on the Solar System. Across the two semesters, two methods were used which provided accuracies. 
+
+\medskip
+
+Star clusters are important targets in astronomical observations. A observation of the cluster represents a snapshot in time. Detailed spectroscopic observations can help in producing an H-R diagram for the cluster. This plot provides important information about the cluster like the different populations of stars, the age of the cluster etc. However, to look at how the cluster will vary with time under the influence of gravity, theoretical simulations represent the perfect choice. Here, by knowing the initial values of the of the dynamical properties of the members of the Solar system, we perform N-Body simulations.
+
+\medskip
+
+Two methods were used in this project over the two semesters. In the first semester, a second order Euler's method was employed. At the base this method lies two first order differential equations for acceleration and velocity. The Euler's method obtains the future position/velocity as an approximate solution of the differential equations. The errors occurring from this method go as $dt$$^{2}$. Higher accuracy is obtained with a smaller timestep, with a consequence of long computational time. Therefore, a higher order method is used to give a higher accuracy. A fourth order predictor-corrector method is applied in this semester for the N-Body simulations.}}
+
+\bigskip
+
+\section{Method}
+\medskip
+
+{\normalsize{
+The system we consider here is our Solar System with all the planets except Mercury. N-Body simulations are done on this system with an eye on monitoring its evolution due to the gravitational interactions. The code is developed in a block structure. This made the job for testing the code easier and efficient. The first part of the code involves calculating the initial acceleration of the all the members of the system. In addition to that, the initial total energy of the Solar System is also determined which will help in doing the energy conservation check in the later part.The motivation for developing this complex fourth order code lies in producing the periodic features called the Milankovic cycles. These cycles describe the effects of the changes in the eccentricity and inclination of the Earth's orbit on the climate. Periodic variations in the eccentricity, axial tilt and the precession represent the three dominant cycles. With a periodicity of 100,000 yrs (Muller 1995), the periodic glacial cycle originates from the varying solar insolation which is result of the variability in the eccentricity.
+
+\medskip
+
+The important cog in the code is the Bootstrapping. The fourth order predictor-corrector method employed here requires past information of the system in order to determine the future points. The second order code used in the previous semester is drafted here. This section is followed by the predictor-corrector block. A time loop is created with the predictor-corrector, adaptive timestep and the energy conservation check included. The method used was the Adams-Bashforth-Moulton predictor-corrector (Conte and De Boor 1972). This predictor-corrector represents a multi-step method which requires four starting values for the predictor step. Having the predicted position and velocity, the predicted acceleration is determined. The corrector uses the predicted value along with three past points to provide the corrected position and velocity. This is followed by calculation of the fractional energy and the orbital distances for the system. 
+
+\medskip
+
+Another important feature of this code comes in the adaptive timestep section. Using the predicted and corrected values, error calculation is done. This error is compared against a relative error and the timestep either is doubled or halved. A minor difference between the two cases is that new interpolated steps are introduced when the timestep is halved. Finally, the end of the code involves the part of refreshing the arrays of the position, velocity and acceleration. The last element in the array with the index,${\it l-8}$ is overwritten by the one at ${\it l-7}$. Also, the future value at ${\it l+1}$ slots in at ${\it l=0}$ step which makes it the current element. 
+
+\medskip
+ 
+}}
+\subsection{Bootstrapping}
+{\normalsize{
+The code for the fourth order predictor corrector method is divided into blocks for ease in error checking. Newton's law of gravity is the main theory behind these simulations of the Solar System. The second order code is used as a part of the fourth order predictor-corrector method. Below are the equations for the second order code block.}}
+
+%acceleration equation
+\[  \textit{\textbf {a}} = \sum_{i=1, i \neq j}^{N}  \frac{Gm_j} {\left| \bf {r_{ij}}^2 \right|}  \bf{\hat {r}_{ij}} \]  \begin{flushright} (1)  \end{flushright}
+
+%position and velocity in second order
+\[ {\bf r_1} = {\bf r_0} + {\bf v_0} dt + \frac{{\bf a_0}} {2} dt^2 \]
+\begin{flushright} (2)  \end{flushright}
+
+\[ {\bf v_1} = {\bf v_0} + \frac{({\bf a_0}+{\bf a_1})} {2} dt \]
+\begin{flushright} (3)  \end{flushright}
+
+\smallskip
+
+where, 
+
+\smallskip
+
+$N$ - Number of bodies in the system 
+
+$m_j$ - mass of the second object (in Kg)
+
+${\bf {\hat {r}_{ij}}}$  - unit vector of the distance vector between two bodies
+
+${\bf r_0, r_1}$ - current and future positions of the body (in m)
+
+${\bf v_0, v_1}$ - current and future velocities of the body(in $\mathrm {m s}^{-1}$)
+
+${\bf a_0, a_1}$ - current and future accelerations of the body(in $\mathrm {m s}^{-2}$)
+
+\bigskip   
+                      
+{\normalsize{
+For the next part of the project, this second order code will provide the past information. Eight paststeps are generated which are then bootstrapped into the predictor-corrector code. }}
+
+\bigskip
+
+
+\subsection{Predictor-Corrector method}
+\medskip
+
+{\normalsize{
+In comparison to the second order code used in the first semester, a fourth order predictor-corrector scheme allows for usage of small timesteps but not compensating in long computational time. In addition, higher accuracy is obtained from the fourth order predictor-corrector method.
+\smallskip 
+
+A basic predictor-corrector method works on the basis of two steps:
+
+\medskip
+
+1. Predictor- This uses current value of the variable, ${\it y_l}$ in determining a predicted value, ${\it y_{l+1}}$ approximately.
+
+\smallskip
+
+2. Corrector- With the predicted value, ${\it y_{l+1}^P}$ and ${\it y_l}$, the corrected value at the ${\it (l+1)^{th}}$ step, ${\it y_{l+1}^C}$ can be calculated.
+
+\medskip
+
+In this project, the Adams-Bashforth-Moulton predictor-corrector (Conte and De Boor 1972) is applied. Being a multistep method, four starting points are required in the calculation of the future value. The predicted position, ${{\bf r}_{l+1}^P}$ and velocity, ${{\bf v}_{l+1}^P}$ is determined using the formulae below.
+\medskip
+
+\[ {\bf r}_{l+1}^P = {\bf r}_l + \frac{{\it dt}} {24} (-9{\bf v}_{l-3} + 37{\bf v}_{l-2} - 59{\bf v}_{l-1} + 55{\bf v}_l) \]
+\begin{flushright} (4) \end{flushright}
+
+\[ {\bf v}_{l+1}^P = {\bf v}_l + \frac{{\it dt}} {24} (-9{\bf a}_{l-3} + 37{\bf a}_{l-2} - 59{\bf a}_{l-1} + 55{\bf a}_l) \]
+\begin{flushright} (5) \end{flushright}
+
+\smallskip
+
+where,
+\smallskip
+${\bf v}_{l-3}, {\bf v}_{l-2}, {\bf v}_{l-1}, {\bf v}_l$ and ${\bf a}_{l-3}, {\bf a}_{l-2}, {\bf a}_{l-1}, {\bf a}_l$ are the positions and accelerations which resemble the past information.
+
+\medskip
+
+Now, the predicted acceleration, ${\bf a}_{l+1}^P$ is determined by using ${\bf r}_{l+1}^P$ and ${\bf v}_{l+1}^P$ in an acceleration loop which uses equation (1). 
+\medskip
+
+With the ingredients obtained, the corrected position, ${\bf r}_{l+1}^C$ and velocity, ${\bf v}_{l+1}^C$ is evaluated from the formulae given below.
+
+\bigskip
+
+\[ {\bf r}_{l+1}^C = {\bf r}_l + \frac{{\it dt}} {24} ({\bf v}_{l-2} - 5{\bf v}_{l-1} + 19{\bf v}_l + 9{\bf v}_{l+1}^P) \]
+\begin{flushright} (6) \end{flushright}
+
+\[ {\bf v}_{l+1}^C = {\bf v}_l + \frac{{\it dt}} {24} ({\bf a}_{l-2} - 5{\bf a}_{l-1} + 19{\bf a}_l + 9{\bf a}_{l+1}^P) \]
+\begin{flushright} (7) \end{flushright}
+
+\smallskip
+
+where,
+\smallskip
+${\bf v}_{l-2}, {\bf v}_{l-1}, {\bf v}_l, {\bf v}_{l+1}^P$ and ${\bf a}_{l-2}, {\bf a}_{l-1}, {\bf a}_l, {\bf a}_{l+1}^P$ become the past information given to the corrector.
+
+\medskip
+
+As done after the predictor, the corrected acceleration, ${\bf a}_{l+1}^P$ is found from the corrected position and velocity. This predictor-corrector block is included in an infinite time loop which runs for a specific amount of time. 
+\medskip
+
+Energy conservation check is then carried out to keep a track on the accuracy of this system. A counter was placed at this point, which forced the fractional energy to be calculated every six months. The corrected positions and velocities were used in this calculation as per the equations given below.
+
+\[ {\it KE} = \frac{1}{2} { \sum_{i=1}^N {\it m_i} {\left| {\bf v}_i\right|}^2} \] 
+\begin{flushright} (8) \end{flushright}
+
+\[ {\it PE} = Gm_i \sum_{j=0,j \neq i}^{N} \frac{\it m_j}{\left| {\bf r}_{ij} \right|} \]
+\begin{flushright} (9) \end{flushright}
+
+where,
+\[ {\left| {\bf v}_i \right|}^2 = v_{ix}^2 + v_{iy}^2 + v_{iz}^2 \]
+${\bf v_i}$ - corrected velocity of the object, ${\bf v}_{l+1}^C$
+
+\[ {\bf r}_{ij} = {\bf r}_i - {\bf r}_j \]
+${\bf r}_i, {\bf r}_j$ are corrected positions of the objects.
+
+\smallskip
+The fractional energy is then given by,
+
+\[ {\it \Delta E} = \frac{\it {E_{curr} - E_{init}}} {\it E_{init}} \]
+
+where,
+$\it E_{curr}$ - current total energy of the system at the particular iteration
+\[ {\it E_{curr}} = {\it KE} + {\it PE} \]
+
+$\it E_{init}$ - initial total energy of the system
+\medskip
+
+Along with the determination of the fractional energy, the orbital distance of the planets was calculated. This gives an additional idea on the stability of the system. 
+\[ {\it d_{sun}} = ({\it r_x^2} + {\it r_y^2})^{1/2} \]
+
+where,
+${\it r_x}$ and ${\it r_y}$ -  magnitude of the x,y component of the corrected position, ${{\bf r}_{l+1}^C}$
+}}
+
+\subsection{Adaptive timestep and error check}
+\medskip
+
+{\normalsize{
+
+This method has an advantage which allows for the timestep to vary to result in better accuracy. At each iteration, the predicted and corrected values are used in determining an error estimate. The estimated error is compared against a relative error, RelErr. A value of $5.0 * 10^{-6}$ is taken in the beginning. The formula below explains the calculation of this error, called as error factor, 'Errfact'
+
+\[ \textrm{Errfact} = \frac{19}{270} \frac{\left| {\it y_{l+1}} - {\it p_{l+1}} \right|} {{\left| {\it y_{l+1}} \right|} + \textrm{Small}} \]
+\smallskip
+
+where,
+${\it y_{l+1}}$ and ${\it p_{l+1}}$ are the corrected and predicted values for the x/y/z component of the position/velocity of a body respectively. 
+\smallskip
+
+Small - an offset used in the calculation with a fixed value of $10^{-5}$ 
+\medskip
+
+The values for the position and velocity are considered in the error calculation. For each direction component of the position and velocity, the error factor is determined. The maximum value among the three directions is taken for each body. With these values obtained for all the bodies, a maximum of those is taken for the position and velocity. This ends with two final contributions to the error from the position and velocity.  Finally, the larger among the two errors is compared against the RelErr'. 
+\medskip
+
+Two cases are considered in this comparison.
+\smallskip
+
+Case 1:  \[\textrm{Errfact} > \textrm{RelErr} \]   \[{\it dt} = 0.5{\it dt} \]
+
+On halving the timestep, new interpolated steps, ${\bf v}_{l-{1/2}}$ and ${\bf v}_{l-{3/2}}$ are created as shown below,
+
+\[ {\bf v}_{l-{1/2}} = \frac{-5{\bf v}_{l-4} + 28{\bf v}_{l-3} - 70{\bf v}_{l-2} + 140{\bf v}_{l-1} + 35{\bf v}_l} {128} \]
+
+\[ {\bf v}_{l-{3/2}} = \frac{3{\bf v}_{l-4} - 20{\bf v}_{l-3} + 90{\bf v}_{l-2} + 60{\bf v}_{l-1} - 5{\bf v}_l} {128} \]
+
+These formulae are similar for getting the interpolated steps for acceleration (${\bf a}_{l-{1/2}}$ and ${\bf a}_{l-{3/2}}$). 
+
+where,
+${\bf v}_{l-4}$, ${\bf v}_{l-3}$, ${\bf v}_{l-3}$, ${\bf v}_{l-2}$, ${\bf v}_{l-1}$, ${\bf v}_l$ are the four past steps required in this interpolation.
+
+\bigskip
+
+Case 2: \[\textrm{Errfact} < \frac{\textrm{RelErr}} {100} \]    \[{\it dt} = 2{\it dt} \]
+
+Doubling the timestep represents the easier task as there are no new past steps produced. So the first four past steps become, ${\bf v}_l$, ${\bf v}_{l-2}$, ${\bf v}_{l-4}$ and ${\bf v}_{l-8}$. }}
+
+\medskip
+\section{Results}
+\medskip
+
+{\normalsize{
+
+The different blocks of the code are tested individually. At first the adaptive timestep is commented out. The timestep is set at 500 s with the runtime for the simulations being 1000yrs. The fractional energy of the system calculated was plotted against time.  
+\medskip 
+
+\begin{figure} [t]
+\includegraphics[width=0.6\textwidth]{en_check_500_noerror.jpg}
+\centering
+\caption{Fractional energy of the system for 1000 yr simulations with ${\it dt} = 100 s$}
+\centering
+\end{figure}
+
+Figure 1 shows how the fractional energy varies from $-6*10^{-13}$ to $8*10^{-13}$. The system is found to be stable from this plot, thus indicating that the predictor-corrector is working. However, prior to his result the system showed instability with the fractional energy rising rapidly to a value close to 2.0. This led to an error check in the code. For this simulation time, the Kinetic and Potential energies were compared against each other. The PE started to rise in contrast to the KE remaining roughly constant. By backtracking in the goal of finding the source of the error, the predicted positions and velocities were found to be increasing rapidly. On further checks, this error was arising due to a problem in the downshifting of the arrays. 
+\medskip
+
+Now, the adaptive timestep is included in the main code. Simulations of this system were carried out with the same initial '$\it dt$' and runtime. Results showed that the orbits of the outer planets remain stable in contrast to those of the inner planets. Figure 2 shows the evidence of these variations in the orbits of the inner planets.
+
+\begin{figure} [h]
+\includegraphics[width=6cm,height=6cm]{innerplanets_dt500.jpg}
+\centering
+\caption{Orbits of the inner planets produced from 1000 yr simulations with initial ${\it dt}= 500 s$}
+\centering
+\end{figure}
+
+\bigskip
+In a try to correct the error, the timestep is reduced to 10 s and the simulations are carried out. However, similar problems emerge for the orbits of the inner planets. The energy conservation of the system is also checked at this point. The fractional energy was found to have values in the range of $10^{-4}$ to $10^{-2}$ which is unexpected for a stable system. In order to find the source for this logical error, each block is checked through brute force. The search was narrowed down to two sections: Downshifting and Adaptive timestep. The downshifting worked alongwith the case of halving the timestep. However, the error was found to occur in the case of doubling the timestep. On doubling the timestep, there will be four past steps at indexes ${\it l}-8, {\it l}-7, {\it l}-6, {\it l}-5$ which cannot be used for the next iteration. This meant that the timestep cannot be doubled consecutively. So, to refresh the past steps, a counter is included in the code which allows the timestep to be doubled after every four iterations.
+\medskip
+
+Now, the initial timestep is set at 1.0 s and the fractional energy of the system is checked for the planets. However, the fractional energy shows a rise to a value of $10^{-4}$ which indicates a bad accuracy.  The timestep, $\it dt$ is raised to 1000 s and the orbits of the planets are also checked. Below are the plots of the fractional energy and planetary orbits. The value for the relative error and the runtime is kept same. 
+\begin{figure} [h]
+\includegraphics[width=0.4\textwidth]{all_planets_orbits_dt1000_1000yrs_adaptive.jpg}
+\centering
+\caption{Orbits of all planets in 1000 yr simulations with initial ${\it dt}= 1000 s$}
+\centering
+\end{figure}
+
+Figure 3 shows the orbits of all the planets of the Solar System from 1000 yr simulations. Alongwith the energy loss of the system, the plot of orbital distances of the planets is produced. This increase in the fractional energy of the system can be found here. Figure 4 provides the evidence of the increase in the orbital distances for the inner planets. 
+\medskip
+
+\begin{figure} [h]
+\includegraphics[width=0.4\textwidth]{dsun_dt1000_1000yrs_adaptive.jpg}
+\centering
+\caption{Orbital distances from 1000 yr simulations of the Solar System}
+\centering
+\end{figure}
+
+In order to observe Milankovic cycles in the orbital distances, the simulation time is increased to 1 Myr and the timestep is dropped to 1 s. Milankovic cycles represent a periodic activity happening every 100,000 yrs. To observe these features, the orbital distances of all the planets are produced. Since the code had an error in the adaptive timestep part, the periodic cycles could not be identified from the curves in the figure. 
+\medskip
+
+\begin{figure} [h]
+\includegraphics[width=0.4\textwidth]{dsun_dt1_1millyrs_adaptive_relerr11_new.jpg}
+\centering
+\caption{Orbital distance for the Earth and Venus against time}
+\centering
+\end{figure}
+
+\begin{figure} [h]
+\includegraphics[width=0.4\textwidth]{dsun_dt1_1millyrs_adaptive_relerr11_new_exceptEarth.jpg}
+\centering
+\caption{Orbital distances for the planets (except Earth) against time}
+\centering
+\end{figure}
+
+Figure 5 includes the orbital distances of the Earth and Venus varying with time. The curve for Earth shows huge deviations close to 100,000 yrs. The Milankovic cycles could not be notified. On looking at figure 6, the curve for Venus shows abnormal during the simulation. Both these figures prove that the code does not completely work in order to produce Milankovic cycles in the orbital distance curves. 
+\medskip
+
+The results produced from the tests proved the code had minor faults. From carrying out brute force checks throughout the sections of the code, the error was found to occur from the scenario of doubling the timestep. 
+}}
+
+\bigskip
+
+\section{Conclusion}
+{\normalsize{
+N-Body simulations were carried out the Solar System with the fourth order predictor-corrector method applied. Different simulation times were considered to look at the energy conservation for the system. The second order code used in the first semester was included in the bootstrapping for the main code. Each section of the code, like the predictor-corrector, adaptive timestep, downshifting etc. were checked for any faults. To consider the stability of the system, energy conservation check was done using the fractional energy calculations. In addition to that, the orbital distances provided a second stability check on the system. The motivation for constructing this complex code rested in understanding how a group of bodies (in this case, the planets) evolved over time while interacting only gravitationally. The consequence of these N-Body simulations on the Solar System was in observing the periodic features called the Milankovic cycles every 100,000 yrs approximately. The final code had faults in the adaptive timestep block. From the simulations, the system was found to be unstable due to the rise in the fractional energy to value of $10^-4$ over time. The source of the error was identified through brute force checks on the different parts of the code. This error could not be corrected even after several tries. On trying to compare with the future plan developed in the first semester, certain sections took longer time than expected. The testing of the main code took longer than the expected amount of time. This caused delays in developing the final report for the project.}} 
+
+\bigskip
+
+\section{References}
+{\normalsize{
+Conte, S. D. and De Boor, C.,(1972). {\it Elementary numerical analysis: an algorithmic approach.} 2nd ed. New York: McGraw-Hill
+
+Goldstein, M.E. and Braun, W.H., (1973).{\it Advanced Methods for the Solution of Differential Equations.} Washington, D.C.
+
+Muller, R.A. and MacDonald, G.J., (1995). Glacial cycles and orbital inclination. {\it Nature}, {\bf 377}(6545), pp.107-108.
+}}
+
+\bigskip
+
+\section{Appendix}
+\end{document}
